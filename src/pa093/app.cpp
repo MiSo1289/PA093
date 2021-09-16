@@ -40,10 +40,9 @@ App::App(glpp::glfw::Window& window)
             {
                 if (event.action == glpp::glfw::KeyAction::press)
                 {
-                    if (auto const closest_point = find_closest_point(
-                            cursor_pos_, drag_point_search_radius))
+                    if (highlighted_point_)
                     {
-                        dragged_point_ = *closest_point;
+                        dragged_point_ = *highlighted_point_;
                     }
                     else
                     {
@@ -59,19 +58,31 @@ App::App(glpp::glfw::Window& window)
             {
                 if (event.action == glpp::glfw::KeyAction::press)
                 {
-                    if (auto const closest_point = find_closest_point(
-                            cursor_pos_, remove_point_search_radius))
+                    if (highlighted_point_)
                     {
-                        remove_point(*closest_point);
+                        remove_point(*highlighted_point_);
+                        highlighted_point_.reset();
+                        dragged_point_.reset();
                     }
                 }
             }
         }));
+
+    auto rd = std::random_device{};
+    rng_.seed(rd());
 }
 
 void
 App::update()
 {
+    if (auto const new_highlighted_point =
+            find_closest_point(cursor_pos_, point_highlight_radius);
+        new_highlighted_point != highlighted_point_)
+    {
+        highlighted_point_ = new_highlighted_point;
+        scene_dirty_ = true;
+    }
+
     if (dragged_point_.has_value())
     {
         points_[*dragged_point_] = cursor_pos_;
@@ -83,7 +94,7 @@ App::update()
         return;
     }
 
-    highlighted_points_.clear();
+    convex_hull_points_.clear();
 
     switch (mode_)
     {
@@ -92,35 +103,56 @@ App::update()
         case Mode::gift_wrapping_convex_hull:
             gift_wrapping_convex_hull_(points_.begin(),
                                        points_.end(),
-                                       std::back_inserter(highlighted_points_));
+                                       std::back_inserter(convex_hull_points_));
             break;
     }
 
     point_mesh_.set_vertex_positions(points_);
-    highlighted_point_mesh_.set_vertex_positions(highlighted_points_);
+    convex_hull_point_mesh_.set_vertex_positions(convex_hull_points_);
+
+    if (highlighted_point_)
+    {
+        highlighted_point_mesh_.set_vertex_positions(
+            std::span{ &points_[*highlighted_point_], 1u });
+    }
+    else
+    {
+        highlighted_point_mesh_.set_vertex_positions({});
+    }
 }
 
 void
 App::draw_gui()
 {
-    ImGui::Begin("Controls", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::SetNextWindowPos({ 50, 50 }, ImGuiCond_FirstUseEver);
+    ImGui::Begin("Tools", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
 
-    ImGui::Text("Left-click to place points");
-    ImGui::Text("Right-click to delete points");
+    if (ImGui::Button("Generate"))
+    {
+        generate_random_points(
+            static_cast<std::size_t>(num_points_to_generate_));
+    }
+    ImGui::SameLine();
+    ImGui::InputInt("", &num_points_to_generate_);
+
+    if (ImGui::Button("Clear"))
+    {
+        remove_all_points();
+    }
+
     ImGui::NewLine();
+    ImGui::Text("Left-click to add points");
+    ImGui::Text("Right-click to remove points");
+    ImGui::End();
 
-    ImGui::Text("Show:");
+    ImGui::SetNextWindowPos({ 50, 200 }, ImGuiCond_FirstUseEver);
+    ImGui::Begin("Show", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
     auto mode_value = static_cast<int>(mode_);
     ImGui::RadioButton("Nothing", &mode_value, static_cast<int>(Mode::none));
     ImGui::RadioButton("Convex hull (gift wrapping)",
                        &mode_value,
                        static_cast<int>(Mode::gift_wrapping_convex_hull));
-    auto const new_mode = static_cast<Mode>(mode_value);
-    if (std::exchange(mode_, new_mode) != new_mode)
-    {
-        scene_dirty_ = true;
-    }
-
+    set_mode(static_cast<Mode>(mode_value));
     ImGui::End();
 
     gui_hovered_ = ImGui::IsAnyItemHovered() or ImGui::IsAnyWindowHovered();
@@ -136,11 +168,13 @@ App::draw_scene()
         case Mode::none:
             break;
         case Mode::gift_wrapping_convex_hull:
-            highlighted_point_mesh_.draw(glpp::DrawPrimitive::line_loop,
-                                         highlighted_color);
-            highlighted_point_mesh_.draw_points(10.0f, highlighted_color);
+            convex_hull_point_mesh_.draw(glpp::DrawPrimitive::line_loop,
+                                         convex_hull_color);
+            convex_hull_point_mesh_.draw_points(10.0f, convex_hull_color);
             break;
     }
+
+    highlighted_point_mesh_.draw_points(10.0f, highlighted_color);
 }
 
 auto
@@ -150,6 +184,15 @@ App::point_from_screen_coords(glm::vec2 screen_coords) const -> glm::vec2
         screen_coords.x / framebuffer_size_.x,
         -screen_coords.y / framebuffer_size_.y,
     };
+}
+
+void
+App::set_mode(Mode const mode)
+{
+    if (std::exchange(mode_, mode) != mode)
+    {
+        scene_dirty_ = true;
+    }
 }
 
 void
@@ -171,8 +214,33 @@ App::remove_point(std::size_t const point_index)
     scene_dirty_ = true;
 }
 
+void
+App::remove_all_points()
+{
+    spdlog::info("Removing all points");
+
+    points_.clear();
+    scene_dirty_ = true;
+}
+
+void
+App::generate_random_points(std::size_t const count)
+{
+    spdlog::info("Generating {0} points", count);
+
+    auto coord_dist = std::uniform_real_distribution{ -1.0f, 1.0f };
+
+    std::generate_n(std::back_inserter(points_),
+                    count,
+                    [&] {
+                        return glm::vec2{ coord_dist(rng_), coord_dist(rng_) };
+                    });
+    scene_dirty_ = true;
+}
+
 auto
-App::find_closest_point(glm::vec2 const pos, float const max_search_radius)
+App::find_closest_point(glm::vec2 const pos,
+                        float const max_search_radius) const
     -> std::optional<std::size_t>
 {
     auto const max_rad2 = max_search_radius * max_search_radius;
