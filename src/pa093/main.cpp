@@ -15,7 +15,8 @@ main() -> int
 {
     using namespace std::literals;
 
-    try {
+    try
+    {
         spdlog::set_level(spdlog::level::debug);
 
         auto glfw = glpp::glfw::Glfw{};
@@ -25,11 +26,12 @@ main() -> int
             pa093::App::window_title,
         };
         auto imgui = glpp::imgui::ImGui{ window };
-        auto app = pa093::App{window};
+        auto app = pa093::App{ window };
 
         ImGui::StyleColorsLight();
 
-        while (not window.should_close()) {
+        while (not window.should_close())
+        {
             glpp::clear_color({ 0.0f, 0.0f, 0.0f, 1.0f });
             window.poll_events();
             imgui.new_frame();
@@ -42,8 +44,9 @@ main() -> int
             window.swap_buffers();
             std::this_thread::sleep_for(10ms);
         }
-
-    } catch (std::exception const& error) {
+    }
+    catch (std::exception const& error)
+    {
         spdlog::error("Uncaught exception in main thread: {0}", error.what());
         return 2;
     }

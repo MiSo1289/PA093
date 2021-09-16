@@ -7,18 +7,18 @@
     {
       "shaderType": "vertex_shader",
       "sources": [
-        "data/shaders/vertex.glsl"
+        "data/shader/vertex.glsl"
       ]
     },
     {
       "shaderType": "fragment_shader",
       "sources": [
-        "data/shaders/frag.glsl"
+        "data/shader/frag.glsl"
       ]
     }
   ],
   "definitions": [],
   "includeDirectories": [
-    "data/shaders"
+    "data/shader"
   ]
 }
