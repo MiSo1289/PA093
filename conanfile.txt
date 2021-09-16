@@ -1,0 +1,17 @@
+[requires]
+boost/1.76.0
+fmt/7.1.3
+glm/0.9.9.8
+glpp/0.1.0
+nlohmann_json/3.9.1
+lyra/1.5.1
+spdlog/1.8.5
+
+[generators]
+cmake
+
+[options]
+boost:header_only=True
+
+[imports]
+lib, *.so* -> ./lib

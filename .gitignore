@@ -1,0 +1,11 @@
+# IDE files
+.idea
+.vs
+.vscode
+
+# Build folders
+cmake-build-*
+build
+
+# ImGUI state
+imgui.ini
