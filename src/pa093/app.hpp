@@ -10,7 +10,7 @@
 #include <glpp/glfw/window.hpp>
 #include <imgui.h>
 
-#include <pa093/algorithm/gift_wrapping_convex_hull.hpp>
+#include <pa093/algorithm/gift_wrapping_convex_hull_2d.hpp>
 #include <pa093/render/mesh.hpp>
 #include <pa093/render/shader_cache.hpp>
 
@@ -43,19 +43,22 @@ private:
         gift_wrapping_convex_hull,
     };
 
-    static constexpr auto point_highlight_radius = 0.05f;
+    static constexpr auto font_size_pixels_unscaled = 13.0f;
+    static constexpr auto min_toolbar_width_pixels = 300.0f;
     static constexpr auto default_color = glm::vec4(1.0f);
     static constexpr auto highlighted_color = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
     static constexpr auto convex_hull_color = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+    static constexpr auto point_highlight_radius = 0.05f;
+    static constexpr auto max_generated_points = 1'000;
 
     // Algorithms
-    algorithm::GiftWrappingConvexHull gift_wrapping_convex_hull_;
+    algorithm::GiftWrappingConvexHull2d gift_wrapping_convex_hull_2d_;
 
     // Render components
     render::ShaderCache shader_cache_;
-    render::DynamicMesh point_mesh_{ shader_cache_ };
-    render::DynamicMesh highlighted_point_mesh_{ shader_cache_ };
-    render::DynamicMesh convex_hull_point_mesh_{ shader_cache_ };
+    render::DynamicMesh2d point_mesh_{ shader_cache_ };
+    render::DynamicMesh2d highlighted_point_mesh_{ shader_cache_ };
+    render::DynamicMesh2d convex_hull_point_mesh_{ shader_cache_ };
 
     // State
     std::mt19937_64 rng_;
@@ -67,6 +70,7 @@ private:
         init_window_mode.width,
         init_window_mode.height,
     };
+    glm::vec2 content_scale_ = {};
     glm::vec2 cursor_pos_ = {};
     std::optional<std::size_t> highlighted_point_ = std::nullopt;
     std::optional<std::size_t> dragged_point_ = std::nullopt;
@@ -76,8 +80,7 @@ private:
     // Events
     std::vector<boost::signals2::scoped_connection> event_connections_;
 
-    [[nodiscard]] auto point_from_screen_coords(glm::vec2 screen_coords) const
-        -> glm::vec2;
+    void set_content_scale(glm::vec2 scale);
 
     void set_mode(Mode mode);
 
@@ -89,12 +92,13 @@ private:
 
     void generate_random_points(std::size_t count);
 
+    [[nodiscard]] auto point_from_screen_coords(glm::vec2 screen_coords) const
+        -> glm::vec2;
+
     [[nodiscard]] auto find_closest_point(
         glm::vec2 pos,
         float max_search_radius = std::numeric_limits<float>::infinity()) const
         -> std::optional<std::size_t>;
-
-
 };
 
 } // namespace pa093

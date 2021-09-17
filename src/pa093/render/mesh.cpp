@@ -5,7 +5,7 @@
 namespace pa093::render
 {
 
-DynamicMesh::DynamicMesh(ShaderCache& shader_cache)
+DynamicMesh2d::DynamicMesh2d(ShaderCache& shader_cache)
     : program_{ shader_cache[program_config_path] }
     , color_uniform_{ program_.uniform_location("color").value() }
 {
@@ -14,7 +14,7 @@ DynamicMesh::DynamicMesh(ShaderCache& shader_cache)
 }
 
 void
-DynamicMesh::set_vertex_positions(std::span<glm::vec2 const> const points)
+DynamicMesh2d::set_vertex_positions(std::span<glm::vec2 const> const points)
 {
     pos_gl_buffer_.buffer_data(
         { glm::value_ptr(points[0]), points.size() * 2u });
@@ -22,7 +22,7 @@ DynamicMesh::set_vertex_positions(std::span<glm::vec2 const> const points)
 }
 
 void
-DynamicMesh::draw(glpp::DrawPrimitive const primitive, glm::vec4 const color)
+DynamicMesh2d::draw(glpp::DrawPrimitive const primitive, glm::vec4 const color)
 {
     auto const program_bind = glpp::ScopedBind{ program_ };
     color_uniform_.load(color);
@@ -32,7 +32,7 @@ DynamicMesh::draw(glpp::DrawPrimitive const primitive, glm::vec4 const color)
 }
 
 void
-DynamicMesh::draw_points(float const point_size, glm::vec4 const color)
+DynamicMesh2d::draw_points(float const point_size, glm::vec4 const color)
 {
     auto const program_bind = glpp::ScopedBind{ program_ };
     color_uniform_.load(color);

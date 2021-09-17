@@ -14,10 +14,10 @@
 namespace pa093::render
 {
 
-class DynamicMesh
+class DynamicMesh2d
 {
 public:
-    explicit DynamicMesh(ShaderCache& shader_cache);
+    explicit DynamicMesh2d(ShaderCache& shader_cache);
 
     void set_vertex_positions(std::span<glm::vec2 const> points);
 
