@@ -22,14 +22,14 @@ auto
 ShaderCache::operator[](std::filesystem::path const& shader_config_path)
     -> glpp::ShaderProgram const&
 {
-    auto cannonical_path =
+    auto canonical_path =
         std::filesystem::canonical(shader_config_path).string();
-    auto match = programs_.find(cannonical_path);
+    auto match = programs_.find(canonical_path);
 
     if (match == programs_.end())
     {
         std::tie(match, std::ignore) =
-            programs_.emplace(std::move(cannonical_path),
+            programs_.emplace(std::move(canonical_path),
                               load_shader_from_config(shader_config_path));
     }
 
