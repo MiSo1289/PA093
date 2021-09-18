@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <iterator>
+#include <limits>
 #include <ranges>
 
 #include <glm/glm.hpp>

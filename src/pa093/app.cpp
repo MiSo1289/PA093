@@ -185,8 +185,8 @@ App::draw_gui()
         if (highlighted_point_)
         {
             ImGui::Text("%f, %f (%zu)",
-                        cursor_pos_.x,
-                        cursor_pos_.y,
+                        points_[*highlighted_point_].x,
+                        points_[*highlighted_point_].y,
                         *highlighted_point_);
         }
         else
