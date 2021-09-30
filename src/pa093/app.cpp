@@ -126,6 +126,10 @@ App::update()
                 gift_wrapping_convex_hull_2d_(
                     points_, std::back_inserter(convex_hull_points_));
                 break;
+            case Mode::graham_scan_convex_hull:
+                graham_scan_convex_hull_2d_(
+                    points_, std::back_inserter(convex_hull_points_));
+                break;
         }
 
         point_mesh_.set_vertex_positions(points_);
@@ -152,6 +156,9 @@ App::draw_gui()
         ImGui::RadioButton("Convex hull (gift wrapping)",
                            &mode_value,
                            static_cast<int>(Mode::gift_wrapping_convex_hull));
+        ImGui::RadioButton("Convex hull (Graham's scan)",
+                           &mode_value,
+                           static_cast<int>(Mode::graham_scan_convex_hull));
         set_mode(static_cast<Mode>(mode_value));
 
         ImGui::Spacing();
@@ -196,7 +203,12 @@ App::draw_gui()
 
         ImGui::Text("%zu points", points_.size());
 
-        if (mode_ == Mode::gift_wrapping_convex_hull)
+        if (std::ranges::count(
+                std::array{
+                    Mode::gift_wrapping_convex_hull,
+                    Mode::graham_scan_convex_hull,
+                },
+                mode_))
         {
             ImGui::Text("%zu hull points", convex_hull_points_.size());
         }
@@ -219,6 +231,8 @@ App::draw_scene()
         case Mode::none:
             break;
         case Mode::gift_wrapping_convex_hull:
+            [[fallthrough]];
+        case Mode::graham_scan_convex_hull:
             convex_hull_point_mesh_.draw(glpp::DrawPrimitive::line_loop,
                                          convex_hull_color);
             convex_hull_point_mesh_.draw_points(10.0f, convex_hull_color);

@@ -9,6 +9,8 @@
 #include <glm/gtx/norm.hpp>
 #include <glm/gtx/vector_angle.hpp>
 
+#include <pa093/algorithm/constants.hpp>
+
 namespace pa093::algorithm
 {
 
@@ -29,8 +31,6 @@ public:
     requires std::same_as<std::iter_value_t<I>, glm::vec2>
     auto operator()(I const first, S const last, O result) -> O
     {
-        static constexpr auto epsilon = 1e-8f;
-
         if (first == last)
         {
             return result;
@@ -45,15 +45,15 @@ public:
         {
             *result++ = *curr;
 
-            auto last_dir = *curr - prev_point;
-            if (glm::length2(last_dir) < epsilon)
+            if (glm::all(glm::epsilonEqual(
+                    prev_point, *curr, constants::epsilon_distance)))
             {
                 // Degenerate case:
                 // All points are packed within the epsilon radius.
                 break;
             }
 
-            last_dir = glm::normalize(last_dir);
+            auto const last_dir = glm::normalize(*curr - prev_point);
             prev_point = *curr;
 
             curr = std::ranges::min_element(
@@ -62,14 +62,13 @@ public:
                 std::less{},
                 [&](glm::vec2 const point)
                 {
-                    auto dir = point - *curr;
-                    if (glm::length2(dir) < epsilon)
+                    if (glm::all(glm::epsilonEqual(
+                            point, *curr, constants::epsilon_distance)))
                     {
                         return std::numeric_limits<float>::infinity();
                     }
 
-                    dir = glm::normalize(dir);
-                    return glm::angle(last_dir, dir);
+                    return glm::angle(last_dir, glm::normalize(point - *curr));
                 });
         } while (curr != start);
 

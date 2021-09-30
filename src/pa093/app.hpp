@@ -11,6 +11,7 @@
 #include <imgui.h>
 
 #include <pa093/algorithm/gift_wrapping_convex_hull_2d.hpp>
+#include <pa093/algorithm/graham_scan_convex_hull_2d.hpp>
 #include <pa093/render/mesh.hpp>
 #include <pa093/render/shader_cache.hpp>
 
@@ -39,8 +40,9 @@ public:
 private:
     enum class Mode : int
     {
-        none,
+        none = 0,
         gift_wrapping_convex_hull,
+        graham_scan_convex_hull,
     };
 
     static constexpr auto font_size_pixels_unscaled = 13.0f;
@@ -53,6 +55,7 @@ private:
 
     // Algorithms
     algorithm::GiftWrappingConvexHull2d gift_wrapping_convex_hull_2d_;
+    algorithm::GrahamScanConvexHull2d graham_scan_convex_hull_2d_;
 
     // Render components
     render::ShaderCache shader_cache_;
