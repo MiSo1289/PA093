@@ -10,8 +10,9 @@
 #include <glpp/glfw/window.hpp>
 #include <imgui.h>
 
-#include <pa093/algorithm/gift_wrapping_convex_hull_2d.hpp>
-#include <pa093/algorithm/graham_scan_convex_hull_2d.hpp>
+#include <pa093/algorithm/convex_hull/gift_wrapping.hpp>
+#include <pa093/algorithm/convex_hull/graham_scan.hpp>
+#include <pa093/algorithm/triangulation/sweep_line.hpp>
 #include <pa093/render/mesh.hpp>
 #include <pa093/render/shader_cache.hpp>
 
@@ -38,37 +39,48 @@ public:
     void draw_scene();
 
 private:
-    enum class Mode : int
+    enum class PolygonMode : int
     {
         none = 0,
+        all_points,
         gift_wrapping_convex_hull,
         graham_scan_convex_hull,
+    };
+
+    enum class TriangulationMode : int
+    {
+        none = 0,
+        sweep_line,
     };
 
     static constexpr auto font_size_pixels_unscaled = 13.0f;
     static constexpr auto min_toolbar_width_pixels = 300.0f;
     static constexpr auto default_color = glm::vec4(1.0f);
     static constexpr auto highlighted_color = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
-    static constexpr auto convex_hull_color = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+    static constexpr auto polygon_color = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+    static constexpr auto triangle_color = glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);
     static constexpr auto point_highlight_radius = 0.05f;
     static constexpr auto max_generated_points = 1'000;
 
     // Algorithms
-    algorithm::GiftWrappingConvexHull2d gift_wrapping_convex_hull_2d_;
-    algorithm::GrahamScanConvexHull2d graham_scan_convex_hull_2d_;
+    algorithm::convex_hull::GiftWrapping gift_wrapping_;
+    algorithm::convex_hull::GrahamScan graham_scan_;
+    algorithm::triangulation::SweepLine sweep_line_;
 
     // Render components
     render::ShaderCache shader_cache_;
     render::DynamicMesh2d point_mesh_{ shader_cache_ };
     render::DynamicMesh2d highlighted_point_mesh_{ shader_cache_ };
-    render::DynamicMesh2d convex_hull_point_mesh_{ shader_cache_ };
+    render::DynamicMesh2d polygon_mesh_{ shader_cache_ };
+    render::DynamicMesh2d triangle_mesh_{ shader_cache_ };
 
     // State
     std::mt19937_64 rng_;
     bool scene_dirty_ = false;
     bool gui_hovered_ = false;
     int num_points_to_generate_ = 10;
-    Mode mode_ = Mode::none;
+    PolygonMode polygon_mode_ = PolygonMode::none;
+    TriangulationMode triangulation_mode_ = TriangulationMode::none;
     glm::vec2 framebuffer_size_ = {
         init_window_mode.width,
         init_window_mode.height,
@@ -78,14 +90,17 @@ private:
     std::optional<std::size_t> highlighted_point_ = std::nullopt;
     std::optional<std::size_t> dragged_point_ = std::nullopt;
     std::vector<glm::vec2> points_ = {};
-    std::vector<glm::vec2> convex_hull_points_ = {};
+    std::vector<glm::vec2> polygon_points_ = {};
+    std::vector<glm::vec2> triangle_points_ = {};
 
     // Events
     std::vector<boost::signals2::scoped_connection> event_connections_;
 
     void set_content_scale(glm::vec2 scale);
 
-    void set_mode(Mode mode);
+    void set_polygon_mode(PolygonMode mode);
+
+    void set_triangulation_mode(TriangulationMode mode);
 
     void add_point(glm::vec2 pos);
 

@@ -9,12 +9,12 @@
 #include <glm/gtx/norm.hpp>
 #include <glm/gtx/vector_angle.hpp>
 
-#include <pa093/algorithm/constants.hpp>
+#include "pa093/algorithm/constants.hpp"
 
-namespace pa093::algorithm
+namespace pa093::algorithm::convex_hull
 {
 
-class GiftWrappingConvexHull2d
+class GiftWrapping
 {
 public:
     template<std::ranges::forward_range R, std::output_iterator<glm::vec2> O>

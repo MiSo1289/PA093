@@ -10,12 +10,12 @@
 #include <glm/gtx/norm.hpp>
 #include <glm/gtx/vector_angle.hpp>
 
-#include <pa093/algorithm/constants.hpp>
+#include "pa093/algorithm/constants.hpp"
 
-namespace pa093::algorithm
+namespace pa093::algorithm::convex_hull
 {
 
-class GrahamScanConvexHull2d
+class GrahamScan
 {
 public:
     template<std::ranges::input_range R, std::output_iterator<glm::vec2> O>
@@ -32,12 +32,13 @@ public:
     requires std::same_as<std::iter_value_t<I>, glm::vec2>
     auto operator()(I const first, S const last, O result) -> O
     {
+        reset();
+
         if (first == last)
         {
             return result;
         }
 
-        points_.clear();
         std::ranges::copy(first, last, std::back_inserter(points_));
 
         // Find pivot point
@@ -67,9 +68,8 @@ public:
         std::ranges::sort(std::next(points_.begin()),
                           points_.end(),
                           std::greater{},
-                          [&](glm::vec2 const point) {
-                              return glm::normalize(point - pivot).x;
-                          });
+                          [&](glm::vec2 const point)
+                          { return glm::normalize(point - pivot).x; });
 
         // Repeat the pivot at the end of the processed sequence, so that any
         // right turns at the end get removed by the processing loop.
@@ -94,7 +94,7 @@ public:
                     (point_b->x - point_a->x) * (point_c->y - point_a->y) -
                     (point_b->y - point_a->y) * (point_c->x - point_a->x);
 
-                if (cross < 0)
+                if (cross < 0.0f)
                 {
                     // Right turn, remove middle point
                     *point_b = *point_c;
@@ -116,8 +116,10 @@ public:
         return std::ranges::copy(points_.begin(), stack_top, result).out;
     }
 
+    void reset() { points_.clear(); }
+
 private:
     std::vector<glm::vec2> points_;
 };
 
-} // namespace pa093::algorithm
+} // namespace pa093::algorithm::convex_hull

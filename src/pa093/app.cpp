@@ -3,7 +3,7 @@
 #include <glm/gtx/norm.hpp>
 #include <spdlog/spdlog.h>
 
-#include <pa093/algorithm/gift_wrapping_convex_hull_2d.hpp>
+#include "pa093/algorithm/convex_hull/gift_wrapping.hpp"
 
 namespace pa093
 {
@@ -116,24 +116,37 @@ App::update()
     if (std::exchange(scene_dirty_, false))
     {
         // Update scene geometry
-        convex_hull_points_.clear();
+        polygon_points_.clear();
+        triangle_points_.clear();
 
-        switch (mode_)
+        switch (polygon_mode_)
         {
-            case Mode::none:
+            case PolygonMode::none:
                 break;
-            case Mode::gift_wrapping_convex_hull:
-                gift_wrapping_convex_hull_2d_(
-                    points_, std::back_inserter(convex_hull_points_));
+            case PolygonMode::all_points:
+                polygon_points_ = points_;
                 break;
-            case Mode::graham_scan_convex_hull:
-                graham_scan_convex_hull_2d_(
-                    points_, std::back_inserter(convex_hull_points_));
+            case PolygonMode::gift_wrapping_convex_hull:
+                gift_wrapping_(points_, std::back_inserter(polygon_points_));
+                break;
+            case PolygonMode::graham_scan_convex_hull:
+                graham_scan_(points_, std::back_inserter(polygon_points_));
+                break;
+        }
+
+        switch (triangulation_mode_)
+        {
+            case TriangulationMode::none:
+                break;
+            case TriangulationMode::sweep_line:
+                sweep_line_(polygon_points_,
+                            std::back_inserter(triangle_points_));
                 break;
         }
 
         point_mesh_.set_vertex_positions(points_);
-        convex_hull_point_mesh_.set_vertex_positions(convex_hull_points_);
+        polygon_mesh_.set_vertex_positions(polygon_points_);
+        triangle_mesh_.set_vertex_positions(triangle_points_);
     }
 }
 
@@ -148,20 +161,64 @@ App::draw_gui()
 
     ImGui::Dummy({ min_toolbar_width_pixels, 0 });
 
-    if (ImGui::CollapsingHeader("Show", ImGuiTreeNodeFlags_DefaultOpen))
+    if (ImGui::CollapsingHeader("Polygon", ImGuiTreeNodeFlags_DefaultOpen))
     {
-        auto mode_value = static_cast<int>(mode_);
+        ImGui::PushID("polygon");
+
+        auto mode_value = static_cast<int>(polygon_mode_);
         ImGui::RadioButton(
-            "Nothing", &mode_value, static_cast<int>(Mode::none));
-        ImGui::RadioButton("Convex hull (gift wrapping)",
+            "None", &mode_value, static_cast<int>(PolygonMode::none));
+        ImGui::RadioButton("All points",
                            &mode_value,
-                           static_cast<int>(Mode::gift_wrapping_convex_hull));
-        ImGui::RadioButton("Convex hull (Graham's scan)",
-                           &mode_value,
-                           static_cast<int>(Mode::graham_scan_convex_hull));
-        set_mode(static_cast<Mode>(mode_value));
+                           static_cast<int>(PolygonMode::all_points));
+        ImGui::RadioButton(
+            "Convex hull (gift wrapping)",
+            &mode_value,
+            static_cast<int>(PolygonMode::gift_wrapping_convex_hull));
+        ImGui::RadioButton(
+            "Convex hull (Graham's scan)",
+            &mode_value,
+            static_cast<int>(PolygonMode::graham_scan_convex_hull));
+        set_polygon_mode(static_cast<PolygonMode>(mode_value));
 
         ImGui::Spacing();
+        ImGui::Separator();
+
+        if (std::ranges::count(
+                std::array{
+                    PolygonMode::gift_wrapping_convex_hull,
+                    PolygonMode::graham_scan_convex_hull,
+                },
+                polygon_mode_))
+        {
+            ImGui::Text("%zu hull points", polygon_points_.size());
+        }
+
+        ImGui::Spacing();
+
+        ImGui::PopID();
+    }
+
+    if (ImGui::CollapsingHeader("Triangulation",
+                                ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        ImGui::PushID("triangulation");
+
+        auto mode_value = static_cast<int>(triangulation_mode_);
+        ImGui::RadioButton("None",
+                           &mode_value,
+                           static_cast<int>(TriangulationMode::none));
+        ImGui::RadioButton("Sweep line",
+                           &mode_value,
+                           static_cast<int>(TriangulationMode::sweep_line));
+        set_triangulation_mode(static_cast<TriangulationMode>(mode_value));
+
+        ImGui::Spacing();
+        ImGui::Separator();
+
+        ImGui::Spacing();
+
+        ImGui::PopID();
     }
 
     if (ImGui::CollapsingHeader("Points", ImGuiTreeNodeFlags_DefaultOpen))
@@ -203,16 +260,6 @@ App::draw_gui()
 
         ImGui::Text("%zu points", points_.size());
 
-        if (std::ranges::count(
-                std::array{
-                    Mode::gift_wrapping_convex_hull,
-                    Mode::graham_scan_convex_hull,
-                },
-                mode_))
-        {
-            ImGui::Text("%zu hull points", convex_hull_points_.size());
-        }
-
         ImGui::Spacing();
     }
 
@@ -224,19 +271,19 @@ App::draw_gui()
 void
 App::draw_scene()
 {
+    if (triangulation_mode_ != TriangulationMode::none)
+    {
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        triangle_mesh_.draw(glpp::DrawPrimitive::triangles, triangle_color);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    }
+
     point_mesh_.draw_points(5.0f, default_color);
 
-    switch (mode_)
+    if (polygon_mode_ != PolygonMode::none)
     {
-        case Mode::none:
-            break;
-        case Mode::gift_wrapping_convex_hull:
-            [[fallthrough]];
-        case Mode::graham_scan_convex_hull:
-            convex_hull_point_mesh_.draw(glpp::DrawPrimitive::line_loop,
-                                         convex_hull_color);
-            convex_hull_point_mesh_.draw_points(10.0f, convex_hull_color);
-            break;
+        polygon_mesh_.draw(glpp::DrawPrimitive::line_loop, polygon_color);
+        polygon_mesh_.draw_points(10.0f, polygon_color);
     }
 
     highlighted_point_mesh_.draw_points(10.0f, highlighted_color);
@@ -255,9 +302,18 @@ App::set_content_scale(glm::vec2 const scale)
 }
 
 void
-App::set_mode(Mode const mode)
+App::set_polygon_mode(PolygonMode const mode)
 {
-    if (std::exchange(mode_, mode) != mode)
+    if (std::exchange(polygon_mode_, mode) != mode)
+    {
+        scene_dirty_ = true;
+    }
+}
+
+void
+App::set_triangulation_mode(TriangulationMode const mode)
+{
+    if (std::exchange(triangulation_mode_, mode) != mode)
     {
         scene_dirty_ = true;
     }
