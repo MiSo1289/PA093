@@ -118,6 +118,7 @@ App::update()
         // Update scene geometry
         polygon_points_.clear();
         triangle_points_.clear();
+        kd_tree_.clear();
 
         switch (polygon_mode_)
         {
@@ -144,9 +145,19 @@ App::update()
                 break;
         }
 
+        switch (partitioning_mode_)
+        {
+            case PartitioningMode::none:
+                break;
+            case PartitioningMode::kd_tree:
+                build_kd_tree_(points_, kd_tree_);
+                break;
+        }
+
         point_mesh_.set_vertex_positions(points_);
         polygon_mesh_.set_vertex_positions(polygon_points_);
         triangle_mesh_.set_vertex_positions(triangle_points_);
+        kd_tree_visualization_.set_tree(kd_tree_);
     }
 }
 
@@ -205,13 +216,32 @@ App::draw_gui()
         ImGui::PushID("triangulation");
 
         auto mode_value = static_cast<int>(triangulation_mode_);
-        ImGui::RadioButton("None",
-                           &mode_value,
-                           static_cast<int>(TriangulationMode::none));
+        ImGui::RadioButton(
+            "None", &mode_value, static_cast<int>(TriangulationMode::none));
         ImGui::RadioButton("Sweep line",
                            &mode_value,
                            static_cast<int>(TriangulationMode::sweep_line));
         set_triangulation_mode(static_cast<TriangulationMode>(mode_value));
+
+        ImGui::Spacing();
+        ImGui::Separator();
+
+        ImGui::Spacing();
+
+        ImGui::PopID();
+    }
+
+    if (ImGui::CollapsingHeader("Partitioning", ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        ImGui::PushID("partitioning");
+
+        auto mode_value = static_cast<int>(partitioning_mode_);
+        ImGui::RadioButton(
+            "None", &mode_value, static_cast<int>(PartitioningMode::none));
+        ImGui::RadioButton("k-D tree",
+                           &mode_value,
+                           static_cast<int>(PartitioningMode::kd_tree));
+        set_partitioning_mode(static_cast<PartitioningMode>(mode_value));
 
         ImGui::Spacing();
         ImGui::Separator();
@@ -278,6 +308,12 @@ App::draw_scene()
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
 
+    if (partitioning_mode_ != PartitioningMode::none)
+    {
+        kd_tree_visualization_.draw(kd_tree_horizontal_color,
+                                    kd_tree_vertical_color);
+    }
+
     point_mesh_.draw_points(5.0f, default_color);
 
     if (polygon_mode_ != PolygonMode::none)
@@ -314,6 +350,15 @@ void
 App::set_triangulation_mode(TriangulationMode const mode)
 {
     if (std::exchange(triangulation_mode_, mode) != mode)
+    {
+        scene_dirty_ = true;
+    }
+}
+
+void
+App::set_partitioning_mode(PartitioningMode const mode)
+{
+    if (std::exchange(partitioning_mode_, mode) != mode)
     {
         scene_dirty_ = true;
     }

@@ -12,9 +12,12 @@
 
 #include <pa093/algorithm/convex_hull/gift_wrapping.hpp>
 #include <pa093/algorithm/convex_hull/graham_scan.hpp>
+#include <pa093/algorithm/kd_tree/build_kd_tree.hpp>
 #include <pa093/algorithm/triangulation/sweep_line.hpp>
+#include <pa093/datastructure/kd_tree.hpp>
 #include <pa093/render/mesh.hpp>
 #include <pa093/render/shader_cache.hpp>
+#include <pa093/visualization/kd_tree.hpp>
 
 namespace pa093
 {
@@ -53,19 +56,33 @@ private:
         sweep_line,
     };
 
+    enum class PartitioningMode : int
+    {
+        none = 0,
+        kd_tree,
+    };
+
     static constexpr auto font_size_pixels_unscaled = 13.0f;
     static constexpr auto min_toolbar_width_pixels = 300.0f;
     static constexpr auto default_color = glm::vec4(1.0f);
     static constexpr auto highlighted_color = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
     static constexpr auto polygon_color = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
     static constexpr auto triangle_color = glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);
+    static constexpr auto kd_tree_vertical_color =
+        glm::vec4(0.0f, 1.0f, 1.0f, 1.0f);
+    static constexpr auto kd_tree_horizontal_color =
+        glm::vec4(1.0f, 0.0f, 1.0f, 1.0f);
     static constexpr auto point_highlight_radius = 0.05f;
     static constexpr auto max_generated_points = 1'000;
 
     // Algorithms
     algorithm::convex_hull::GiftWrapping gift_wrapping_;
     algorithm::convex_hull::GrahamScan graham_scan_;
+    algorithm::kd_tree::BuildKDTree2f build_kd_tree_;
     algorithm::triangulation::SweepLine sweep_line_;
+
+    // Datastructures
+    datastructure::KDTree2f kd_tree_;
 
     // Render components
     render::ShaderCache shader_cache_;
@@ -73,6 +90,7 @@ private:
     render::DynamicMesh2d highlighted_point_mesh_{ shader_cache_ };
     render::DynamicMesh2d polygon_mesh_{ shader_cache_ };
     render::DynamicMesh2d triangle_mesh_{ shader_cache_ };
+    visualization::KDTree kd_tree_visualization_{ shader_cache_ };
 
     // State
     std::mt19937_64 rng_;
@@ -81,6 +99,7 @@ private:
     int num_points_to_generate_ = 10;
     PolygonMode polygon_mode_ = PolygonMode::none;
     TriangulationMode triangulation_mode_ = TriangulationMode::none;
+    PartitioningMode partitioning_mode_ = PartitioningMode::none;
     glm::vec2 framebuffer_size_ = {
         init_window_mode.width,
         init_window_mode.height,
@@ -101,6 +120,8 @@ private:
     void set_polygon_mode(PolygonMode mode);
 
     void set_triangulation_mode(TriangulationMode mode);
+
+    void set_partitioning_mode(PartitioningMode mode);
 
     void add_point(glm::vec2 pos);
 
