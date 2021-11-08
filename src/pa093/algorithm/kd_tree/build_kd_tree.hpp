@@ -1,5 +1,10 @@
 #pragma once
 
+#include <algorithm>
+#include <concepts>
+#include <functional>
+#include <iterator>
+#include <ranges>
 #include <vector>
 
 #include <pa093/datastructure/kd_tree.hpp>

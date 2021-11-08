@@ -308,7 +308,7 @@ App::draw_scene()
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
 
-    if (partitioning_mode_ != PartitioningMode::none)
+    if (partitioning_mode_ == PartitioningMode::kd_tree)
     {
         kd_tree_visualization_.draw(kd_tree_horizontal_color,
                                     kd_tree_vertical_color);
