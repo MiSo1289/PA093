@@ -6,4 +6,5 @@ target_sources(
   ${PROJECT_NAME}
   PRIVATE
   constants.cpp
+  utility.cpp
 )

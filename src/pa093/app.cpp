@@ -143,6 +143,9 @@ App::update()
                 sweep_line_(polygon_points_,
                             std::back_inserter(triangle_points_));
                 break;
+            case TriangulationMode::delaunay:
+                delaunay_(points_, std::back_inserter(triangle_points_));
+                break;
         }
 
         switch (partitioning_mode_)
@@ -218,9 +221,12 @@ App::draw_gui()
         auto mode_value = static_cast<int>(triangulation_mode_);
         ImGui::RadioButton(
             "None", &mode_value, static_cast<int>(TriangulationMode::none));
-        ImGui::RadioButton("Sweep line",
+        ImGui::RadioButton("Sweep line (triangulates current polygon)",
                            &mode_value,
                            static_cast<int>(TriangulationMode::sweep_line));
+        ImGui::RadioButton("Delaunay (triangulates all points)",
+                           &mode_value,
+                           static_cast<int>(TriangulationMode::delaunay));
         set_triangulation_mode(static_cast<TriangulationMode>(mode_value));
 
         ImGui::Spacing();
@@ -328,8 +334,6 @@ App::draw_scene()
 void
 App::set_content_scale(glm::vec2 const scale)
 {
-    content_scale_ = scale;
-
     ImGui::GetIO().Fonts->ClearFonts();
 
     auto cfg = ImFontConfig{};
@@ -376,7 +380,8 @@ App::add_point(glm::vec2 const pos)
 void
 App::remove_point(std::size_t const point_index)
 {
-    auto const point_iter = points_.begin() + point_index;
+    auto const point_iter =
+        points_.begin() + static_cast<std::ptrdiff_t>(point_index);
     spdlog::info("Removing point at {0}, {1}", point_iter->x, point_iter->y);
 
     points_.erase(point_iter);

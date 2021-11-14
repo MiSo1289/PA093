@@ -115,13 +115,14 @@ public:
                     auto const point_b = point_b_iter->first;
                     auto const point_c = point_c_iter->first;
 
-                    auto const cross =
-                        (point_b.x - point_a.x) * (point_c.y - point_a.y) -
-                        (point_b.y - point_a.y) * (point_c.x - point_a.x);
+                    auto m = glm::mat2{};
+                    m[0] = point_b - point_a;
+                    m[1] = point_c - point_a;
+                    const auto det = glm::determinant(m);
 
                     if (current_path == Path::bottom)
                     {
-                        if (cross < 0.0f)
+                        if (det < 0.0f)
                         {
                             // B C
                             // A
@@ -136,7 +137,7 @@ public:
                     }
                     else
                     {
-                        if (cross > 0.0f)
+                        if (det > 0.0f)
                         {
                             // A
                             // B C

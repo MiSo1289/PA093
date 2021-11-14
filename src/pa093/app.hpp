@@ -14,6 +14,7 @@
 #include <pa093/algorithm/convex_hull/graham_scan.hpp>
 #include <pa093/algorithm/kd_tree/build_kd_tree.hpp>
 #include <pa093/algorithm/triangulation/sweep_line.hpp>
+#include <pa093/algorithm/triangulation/delaunay.hpp>
 #include <pa093/datastructure/kd_tree.hpp>
 #include <pa093/render/mesh.hpp>
 #include <pa093/render/shader_cache.hpp>
@@ -54,6 +55,7 @@ private:
     {
         none = 0,
         sweep_line,
+        delaunay,
     };
 
     enum class PartitioningMode : int
@@ -80,6 +82,7 @@ private:
     algorithm::convex_hull::GrahamScan graham_scan_;
     algorithm::kd_tree::BuildKDTree2f build_kd_tree_;
     algorithm::triangulation::SweepLine sweep_line_;
+    algorithm::triangulation::Delaunay delaunay_;
 
     // Datastructures
     datastructure::KDTree2f kd_tree_;
@@ -104,7 +107,6 @@ private:
         init_window_mode.width,
         init_window_mode.height,
     };
-    glm::vec2 content_scale_ = {};
     glm::vec2 cursor_pos_ = {};
     std::optional<std::size_t> highlighted_point_ = std::nullopt;
     std::optional<std::size_t> dragged_point_ = std::nullopt;

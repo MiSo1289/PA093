@@ -48,10 +48,10 @@ private:
 
     template<std::forward_iterator I, std::sentinel_for<I> S>
     requires std::same_as<std::iter_value_t<I>, point_type>
-    auto build_subtree(tree_type& tree,
-                       I const first,
-                       S const last,
-                       std::size_t const depth) -> node_id_type
+    static auto build_subtree(tree_type& tree,
+                              I const first,
+                              S const last,
+                              std::size_t const depth) -> node_id_type
     {
         auto const n = std::distance(first, last);
 

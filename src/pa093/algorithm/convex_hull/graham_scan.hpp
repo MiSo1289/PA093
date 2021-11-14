@@ -90,11 +90,11 @@ public:
                 auto const point_b = std::prev(point_c);
                 auto const point_a = std::prev(point_b);
 
-                auto const cross =
-                    (point_b->x - point_a->x) * (point_c->y - point_a->y) -
-                    (point_b->y - point_a->y) * (point_c->x - point_a->x);
+                auto m = glm::mat2{};
+                m[0] = *point_b - *point_a;
+                m[1] = *point_c - *point_a;
 
-                if (cross < 0.0f)
+                if (glm::determinant(m) < 0.0f)
                 {
                     // Right turn, remove middle point
                     *point_b = *point_c;
