@@ -6,5 +6,6 @@ target_sources(
   ${PROJECT_NAME}
   PRIVATE
   constants.cpp
+  geometric_functions.cpp
   utility.cpp
 )

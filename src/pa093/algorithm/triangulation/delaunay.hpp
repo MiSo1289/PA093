@@ -13,43 +13,12 @@
 #include <vector>
 
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_access.hpp>
-#include <glm/gtx/norm.hpp>
-#include <glm/gtx/vector_angle.hpp>
 
 #include <pa093/algorithm/constants.hpp>
+#include <pa093/algorithm/geometric_functions.hpp>
 
 namespace pa093::algorithm::triangulation
 {
-
-[[nodiscard]] inline auto
-circumcircle_center(glm::vec2 const a,
-                    glm::vec2 const b,
-                    glm::vec2 const c) noexcept -> std::optional<glm::vec2>
-{
-    auto const a_sq = glm::length2(a);
-    auto const b_sq = glm::length2(b);
-    auto const c_sq = glm::length2(c);
-
-    auto const det = [&]
-    {
-        auto m = glm::mat2{};
-        m[0] = b - a;
-        m[1] = c - a;
-        return glm::determinant(m);
-    }();
-
-    if (std::abs(det) < constants::epsilon_determinant)
-    {
-        // Collinear points
-        return std::nullopt;
-    }
-
-    return glm::vec2{
-        a_sq * (b.y - c.y) + b_sq * (c.y - a.y) + c_sq * (a.y - b.y),
-        a_sq * (c.x - b.x) + b_sq * (a.x - c.x) + c_sq * (b.x - a.x),
-    } / (2.0f * det);
-}
 
 [[nodiscard]] inline auto
 delaunay_distance(glm::vec2 const p1,
@@ -103,29 +72,25 @@ public:
                 [&](glm::vec2 const p) { return glm::distance2(p1, p); });
 
             // p3 is the point that minimizes delaunay distance to (p1, p2)
-            auto const p3 = [&]
+            auto p3 = complete_triangle(p1, p2);
+            if (not p3)
             {
-                auto p3 = complete_triangle(p1, p2);
-                if (not p3)
-                {
-                    // (p1, p2) lies on the convex hull - no points to the left;
-                    // reverse the edge
-                    std::swap(p1, p2);
-                    p3 = complete_triangle(p1, p2);
+                // (p1, p2) lies on the convex hull - no points to the left;
+                // reverse the edge
+                std::swap(p1, p2);
+                p3 = complete_triangle(p1, p2);
+            }
 
-                    assert(p3.has_value());
-                }
+            if (p3)
+            {
+                active_boundary_.push_back({ p1, p2 });
+                active_boundary_.push_back({ p2, *p3 });
+                active_boundary_.push_back({ *p3, p1 });
 
-                return *p3;
-            }();
-
-            active_boundary_.push_back({ p1, p2 });
-            active_boundary_.push_back({ p2, p3 });
-            active_boundary_.push_back({ p3, p1 });
-
-            *result++ = p1;
-            *result++ = p2;
-            *result++ = p3;
+                *result++ = p1;
+                *result++ = p2;
+                *result++ = *p3;
+            }
         }
 
         while (not active_boundary_.empty())

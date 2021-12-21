@@ -118,6 +118,7 @@ App::update()
         // Update scene geometry
         polygon_points_.clear();
         triangle_points_.clear();
+        voronoi_points_.clear();
         kd_tree_.clear();
 
         switch (polygon_mode_)
@@ -146,6 +147,10 @@ App::update()
             case TriangulationMode::delaunay:
                 delaunay_(points_, std::back_inserter(triangle_points_));
                 break;
+            case TriangulationMode::delaunay_plus_voronoi:
+                delaunay_(points_, std::back_inserter(triangle_points_));
+                voronoi_(triangle_points_, std::back_inserter(voronoi_points_));
+                break;
         }
 
         switch (partitioning_mode_)
@@ -160,6 +165,7 @@ App::update()
         point_mesh_.set_vertex_positions(points_);
         polygon_mesh_.set_vertex_positions(polygon_points_);
         triangle_mesh_.set_vertex_positions(triangle_points_);
+        voronoi_mesh_.set_vertex_positions(voronoi_points_);
         kd_tree_visualization_.set_tree(kd_tree_);
     }
 }
@@ -227,6 +233,10 @@ App::draw_gui()
         ImGui::RadioButton("Delaunay (triangulates all points)",
                            &mode_value,
                            static_cast<int>(TriangulationMode::delaunay));
+        ImGui::RadioButton(
+            "Delaunay + Voronoi diagram",
+            &mode_value,
+            static_cast<int>(TriangulationMode::delaunay_plus_voronoi));
         set_triangulation_mode(static_cast<TriangulationMode>(mode_value));
 
         ImGui::Spacing();
@@ -312,6 +322,11 @@ App::draw_scene()
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         triangle_mesh_.draw(glpp::DrawPrimitive::triangles, triangle_color);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    }
+
+    if (triangulation_mode_ == TriangulationMode::delaunay_plus_voronoi)
+    {
+        voronoi_mesh_.draw(glpp::DrawPrimitive::lines, voronoi_color);
     }
 
     if (partitioning_mode_ == PartitioningMode::kd_tree)

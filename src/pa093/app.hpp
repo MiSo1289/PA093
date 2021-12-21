@@ -13,8 +13,9 @@
 #include <pa093/algorithm/convex_hull/gift_wrapping.hpp>
 #include <pa093/algorithm/convex_hull/graham_scan.hpp>
 #include <pa093/algorithm/kd_tree/build_kd_tree.hpp>
-#include <pa093/algorithm/triangulation/sweep_line.hpp>
 #include <pa093/algorithm/triangulation/delaunay.hpp>
+#include <pa093/algorithm/triangulation/dual_graph.hpp>
+#include <pa093/algorithm/triangulation/sweep_line.hpp>
 #include <pa093/datastructure/kd_tree.hpp>
 #include <pa093/render/mesh.hpp>
 #include <pa093/render/shader_cache.hpp>
@@ -29,7 +30,7 @@ public:
     static constexpr auto window_title = "PA093";
     static constexpr auto init_window_mode = glpp::glfw::WindowMode{
         .window_type = glpp::glfw::WindowType::windowed,
-        // This resolution was prescribed by God
+        // The holy resolution
         .width = 640,
         .height = 480,
     };
@@ -56,6 +57,7 @@ private:
         none = 0,
         sweep_line,
         delaunay,
+        delaunay_plus_voronoi,
     };
 
     enum class PartitioningMode : int
@@ -70,12 +72,14 @@ private:
     static constexpr auto highlighted_color = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
     static constexpr auto polygon_color = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
     static constexpr auto triangle_color = glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);
+    static constexpr auto voronoi_color = glm::vec4(0.0f, 1.0f, 1.0f, 1.0f);
     static constexpr auto kd_tree_vertical_color =
         glm::vec4(0.0f, 1.0f, 1.0f, 1.0f);
     static constexpr auto kd_tree_horizontal_color =
         glm::vec4(1.0f, 0.0f, 1.0f, 1.0f);
     static constexpr auto point_highlight_radius = 0.05f;
     static constexpr auto max_generated_points = 1'000;
+    static constexpr auto voronoi_hull_edge_length = 3.0f;
 
     // Algorithms
     algorithm::convex_hull::GiftWrapping gift_wrapping_;
@@ -83,6 +87,7 @@ private:
     algorithm::kd_tree::BuildKDTree2f build_kd_tree_;
     algorithm::triangulation::SweepLine sweep_line_;
     algorithm::triangulation::Delaunay delaunay_;
+    algorithm::triangulation::DualGraph voronoi_{ voronoi_hull_edge_length };
 
     // Datastructures
     datastructure::KDTree2f kd_tree_;
@@ -93,6 +98,7 @@ private:
     render::DynamicMesh2d highlighted_point_mesh_{ shader_cache_ };
     render::DynamicMesh2d polygon_mesh_{ shader_cache_ };
     render::DynamicMesh2d triangle_mesh_{ shader_cache_ };
+    render::DynamicMesh2d voronoi_mesh_{ shader_cache_ };
     visualization::KDTree kd_tree_visualization_{ shader_cache_ };
 
     // State
@@ -113,6 +119,7 @@ private:
     std::vector<glm::vec2> points_ = {};
     std::vector<glm::vec2> polygon_points_ = {};
     std::vector<glm::vec2> triangle_points_ = {};
+    std::vector<glm::vec2> voronoi_points_ = {};
 
     // Events
     std::vector<boost::signals2::scoped_connection> event_connections_;

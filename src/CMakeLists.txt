@@ -11,6 +11,7 @@ target_link_libraries(
   CONAN_PKG::glm
   CONAN_PKG::glpp
   CONAN_PKG::fmt
+  CONAN_PKG::range-v3
   CONAN_PKG::spdlog
 )
 
