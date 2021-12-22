@@ -230,7 +230,7 @@ App::draw_gui()
         ImGui::RadioButton("Sweep line (triangulates current polygon)",
                            &mode_value,
                            static_cast<int>(TriangulationMode::sweep_line));
-        ImGui::RadioButton("Delaunay (triangulates all points)",
+        ImGui::RadioButton("Delaunay (triangulates convex hull)",
                            &mode_value,
                            static_cast<int>(TriangulationMode::delaunay));
         ImGui::RadioButton(

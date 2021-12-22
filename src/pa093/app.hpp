@@ -74,7 +74,7 @@ private:
     static constexpr auto triangle_color = glm::vec4(1.0f, 1.0f, 0.0f, 1.0f);
     static constexpr auto voronoi_color = glm::vec4(0.0f, 1.0f, 1.0f, 1.0f);
     static constexpr auto kd_tree_vertical_color =
-        glm::vec4(0.0f, 1.0f, 1.0f, 1.0f);
+        glm::vec4(0.3f, 1.0f, 0.3f, 1.0f);
     static constexpr auto kd_tree_horizontal_color =
         glm::vec4(1.0f, 0.0f, 1.0f, 1.0f);
     static constexpr auto point_highlight_radius = 0.05f;
