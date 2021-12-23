@@ -30,9 +30,8 @@ public:
     static constexpr auto window_title = "PA093";
     static constexpr auto init_window_mode = glpp::glfw::WindowMode{
         .window_type = glpp::glfw::WindowType::windowed,
-        // The holy resolution
-        .width = 640,
-        .height = 480,
+        .width = 1920,
+        .height = 1080,
     };
 
     explicit App(glpp::glfw::Window& window);
